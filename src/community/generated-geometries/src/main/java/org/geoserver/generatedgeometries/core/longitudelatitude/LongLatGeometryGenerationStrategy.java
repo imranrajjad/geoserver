@@ -13,7 +13,6 @@ import static org.geoserver.generatedgeometries.core.GeometryGenerationStrategy.
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -29,7 +28,6 @@ import org.geotools.data.Query;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
-import org.geotools.filter.visitor.DuplicatingFilterVisitor;
 import org.geotools.geometry.jts.JTSFactoryFinder;
 import org.geotools.referencing.CRS;
 import org.geotools.util.logging.Logging;
@@ -41,15 +39,8 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.feature.type.Name;
-import org.opengis.filter.And;
 import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory;
-import org.opengis.filter.Or;
-import org.opengis.filter.PropertyIsBetween;
-import org.opengis.filter.expression.Literal;
-import org.opengis.filter.expression.PropertyName;
-import org.opengis.filter.spatial.BBOX;
-import org.opengis.geometry.BoundingBox;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
@@ -229,33 +220,13 @@ public class LongLatGeometryGenerationStrategy
     @Override
     public Filter convertFilter(FeatureTypeInfo info, Filter filter) {
         final FilterFactory ff = CommonFactoryFinder.getFilterFactory();
-        DuplicatingFilterVisitor dfv = new DuplicatingFilterVisitor();
-        Object bb = filter.accept(dfv, ff);
-        if (bb instanceof BBOX) {
-            BoundingBox bounds = ((BBOX) bb).getBounds();
-            LongLatConfiguration configuration = getLongLatConfiguration(info);
 
-            return ff.and(getLongLatFilters(bounds, ff, configuration));
-        } else if (bb instanceof Or) {
-            // https://github.com/geosolutions-it/C105-2018-EMSA-VDS/issues/73
-            Or orFilter = (Or) bb;
-            // has multiple bboxes
-            List<Filter> propertyIsBetweenLists = new ArrayList<Filter>();
-            LongLatConfiguration configuration = getLongLatConfiguration(info);
-            for (Filter f : orFilter.getChildren()) {
-                // skip if this filter is not a BBOX
-                if (!(f instanceof BBOX)) continue;
+        LongLatConfiguration configuration = getLongLatConfiguration(info);
 
-                BoundingBox bounds = ((BBOX) f).getBounds();
-                And andFilter = ff.and(getLongLatFilters(bounds, ff, configuration));
-                propertyIsBetweenLists.add(andFilter);
-            }
-            // fall back to original filter if none of the filters f
-            if (propertyIsBetweenLists.isEmpty()) return filter;
-            return ff.or(propertyIsBetweenLists);
-        }
+        BBOXToXYFilterVisitor dfv = new BBOXToXYFilterVisitor(ff, configuration);
 
-        return filter;
+        // Object bb = filter.accept(dfv, ff);
+        return (Filter) filter.accept(dfv, ff);
     }
 
     @Override
@@ -283,26 +254,5 @@ public class LongLatGeometryGenerationStrategy
         }
         q.setPropertyNames(properties);
         return q;
-    }
-
-    private PropertyIsBetween createBetweenFilter(
-            FilterFactory ff, String name, double minValue, double maxValue) {
-        PropertyName propertyName = ff.property(name);
-        Literal min = ff.literal(minValue);
-        Literal max = ff.literal(maxValue);
-        return ff.between(propertyName, min, max);
-    }
-
-    private List<Filter> getLongLatFilters(
-            BoundingBox bounds, FilterFactory ff, LongLatConfiguration configuration) {
-
-        PropertyIsBetween longitudeFilter =
-                createBetweenFilter(
-                        ff, configuration.longAttributeName, bounds.getMinX(), bounds.getMaxX());
-        PropertyIsBetween latitudeFilter =
-                createBetweenFilter(
-                        ff, configuration.latAttributeName, bounds.getMinY(), bounds.getMaxY());
-
-        return Arrays.asList(longitudeFilter, latitudeFilter);
     }
 }

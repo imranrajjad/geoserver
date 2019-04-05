@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.logging.Level;
@@ -34,6 +35,7 @@ import org.geotools.data.Query;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
+import org.geotools.filter.Capabilities;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.junit.Test;
 import org.locationtech.jts.geom.Point;
@@ -44,9 +46,9 @@ import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.filter.And;
 import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory;
-import org.opengis.filter.Or;
 import org.opengis.filter.expression.Literal;
 import org.opengis.filter.expression.PropertyName;
+import org.opengis.filter.spatial.BBOX;
 
 public class LongLatGeometryGenerationStrategyTest {
 
@@ -332,28 +334,88 @@ public class LongLatGeometryGenerationStrategyTest {
         Query convertedQuery = strategy.convertQuery(info, q);
 
         // then
-        assertSame(q.getFilter(), convertedQuery.getFilter());
+        assertEquals(q.getFilter(), convertedQuery.getFilter());
     }
-    
- // https://github.com/geosolutions-it/C105-2018-EMSA-VDS/issues/73
+
     @Test
-    public void testMultipleBBoxFilterAsORIsConvertedToBetween() {
+    public void testBBoxFilterWithOthersConvertedToBetween() {
         // given
         final FilterFactory ff = CommonFactoryFinder.getFilterFactory();
+
+        // to evaluate a filter for BBOX capabilities after conversion
+        Capabilities bboxCapabilities = new Capabilities();
+        bboxCapabilities.addType(BBOX.class);
 
         FeatureTypeInfo info = mock(FeatureTypeInfo.class);
         MetadataMap metadata = getMetadata();
         when(info.getMetadata()).thenReturn(metadata);
         Filter bbox1 = ff.bbox("point", -2, -2, 2, 2, "WGS84");
         Filter bbox2 = ff.bbox("point", -1, -1, 1, 1, "WGS84");
+        Filter nonSpatial = ff.equals(ff.literal("123"), ff.literal(123));
 
-        Filter filter = ff.or(Arrays.asList(bbox1, bbox2));
+        Filter filterOr = ff.or(Arrays.asList(bbox1, bbox2, nonSpatial));
 
         // when
-        Filter convFilter = strategy.convertFilter(info, filter);
+        Filter convFilter = strategy.convertFilter(info, filterOr);
 
         // then
         assertNotNull(convFilter);
-        assertTrue(convFilter instanceof Or);
+        // converted filer should not have any BBOX capabilities
+        assertEquals(bboxCapabilities.supports(convFilter), false);
+
+        // Now check with And
+
+        Filter filterAnd = ff.and(Arrays.asList(bbox1, bbox2, nonSpatial));
+
+        // when
+        convFilter = strategy.convertFilter(info, filterAnd);
+
+        // then
+        assertNotNull(convFilter);
+        // converted filer should not have any BBOX capabilities
+        assertEquals(bboxCapabilities.supports(convFilter), false);
+
+        // check with Not
+        Filter filterNot = ff.not(bbox1);
+
+        // when
+        convFilter = strategy.convertFilter(info, filterNot);
+
+        // then
+        assertNotNull(convFilter);
+        // converted filer should not have any BBOX capabilities
+        assertEquals(bboxCapabilities.supports(convFilter), false);
+    }
+
+    @Test
+    public void testNestedBBoxFilterWithOthersConvertedToBetween() {
+
+        // given
+        final FilterFactory ff = CommonFactoryFinder.getFilterFactory();
+
+        // to evaluate a filter for BBOX capabilities after conversion
+        Capabilities bboxCapabilities = new Capabilities();
+        bboxCapabilities.addType(BBOX.class);
+
+        FeatureTypeInfo info = mock(FeatureTypeInfo.class);
+        MetadataMap metadata = getMetadata();
+        when(info.getMetadata()).thenReturn(metadata);
+        Filter bbox1 = ff.bbox("point", -2, -2, 2, 2, "WGS84");
+
+        Filter nonSpatial = ff.equals(ff.literal("123"), ff.literal(123));
+        Filter nonSpatial2 = ff.equals(ff.literal("321"), ff.literal(321));
+        Filter nonSpatial3 = ff.equals(ff.literal("456"), ff.literal(456));
+
+        Filter filterLevel0 = ff.and(bbox1, nonSpatial);
+        Filter filterLevel1 = ff.and(nonSpatial2, filterLevel0);
+        Filter filterLevel2 = ff.and(nonSpatial3, filterLevel1);
+
+        // when
+        Filter convFilter = strategy.convertFilter(info, filterLevel2);
+
+        // then
+        assertNotNull(convFilter);
+        // converted filer should not have any BBOX capabilities
+        assertEquals(bboxCapabilities.supports(convFilter), false);
     }
 }
