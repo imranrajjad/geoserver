@@ -370,8 +370,14 @@ public class LongLatGeometryGenerationStrategyTest {
                                 getTargetFilter(-1d, -1d, 1d, 1d, ff),
                                 nonSpatial));
         // similar filters should produce some result on toString()
-        assertEquals(convFilter.toString(), expected.toString());
+        // assertEquals(convFilter.toString(), expected.toString());
+        FilterCollector expectedCollector = new FilterCollector();
+        expected.accept(expectedCollector, ff);
 
+        FilterCollector convFilterCollector = new FilterCollector();
+        convFilter.accept(convFilterCollector, ff);
+
+        assertTrue(expectedCollector.hasAll(convFilterCollector.allFilters));
         // Now check with And
 
         Filter filterAnd = ff.and(Arrays.asList(bbox1, bbox2, nonSpatial));
@@ -390,7 +396,13 @@ public class LongLatGeometryGenerationStrategyTest {
                                 getTargetFilter(-1d, -1d, 1d, 1d, ff),
                                 nonSpatial));
 
-        assertEquals(convFilter.toString(), expected.toString());
+        expectedCollector = new FilterCollector();
+        expected.accept(expectedCollector, ff);
+
+        convFilterCollector = new FilterCollector();
+        convFilter.accept(convFilterCollector, ff);
+
+        assertTrue(expectedCollector.hasAll(convFilterCollector.allFilters));
 
         // check with Not
         Filter filterNot = ff.not(bbox1);
@@ -404,7 +416,14 @@ public class LongLatGeometryGenerationStrategyTest {
         assertEquals(bboxCapabilities.supports(convFilter), false);
 
         expected = ff.not(getTargetFilter(-2d, -2d, 2d, 2d, ff));
-        assertEquals(convFilter.toString(), expected.toString());
+
+        expectedCollector = new FilterCollector();
+        expected.accept(expectedCollector, ff);
+
+        convFilterCollector = new FilterCollector();
+        convFilter.accept(convFilterCollector, ff);
+
+        assertTrue(expectedCollector.hasAll(convFilterCollector.allFilters));
     }
 
     @Test
@@ -442,7 +461,13 @@ public class LongLatGeometryGenerationStrategyTest {
         Filter expectedLevel1 = ff.and(nonSpatial2, expetectedfilterLevel0);
         Filter expectedLevel2 = ff.and(nonSpatial3, expectedLevel1);
 
-        assertEquals(convFilter.toString(), expectedLevel2.toString());
+        FilterCollector expectedCollector = new FilterCollector();
+        expectedLevel2.accept(expectedCollector, ff);
+
+        FilterCollector convFilterCollector = new FilterCollector();
+        convFilter.accept(convFilterCollector, ff);
+
+        assertTrue(expectedCollector.hasAll(convFilterCollector.allFilters));
     }
 
     private static Filter getTargetFilter(
