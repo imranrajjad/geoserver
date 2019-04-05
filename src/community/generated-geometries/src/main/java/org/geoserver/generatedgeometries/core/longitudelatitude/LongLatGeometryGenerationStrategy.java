@@ -220,12 +220,8 @@ public class LongLatGeometryGenerationStrategy
     @Override
     public Filter convertFilter(FeatureTypeInfo info, Filter filter) {
         final FilterFactory ff = CommonFactoryFinder.getFilterFactory();
-
         LongLatConfiguration configuration = getLongLatConfiguration(info);
-
         BBOXToXYFilterVisitor dfv = new BBOXToXYFilterVisitor(ff, configuration);
-
-        // Object bb = filter.accept(dfv, ff);
         return (Filter) filter.accept(dfv, ff);
     }
 

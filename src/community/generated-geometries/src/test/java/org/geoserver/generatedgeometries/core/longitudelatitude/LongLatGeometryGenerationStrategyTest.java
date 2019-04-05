@@ -363,6 +363,15 @@ public class LongLatGeometryGenerationStrategyTest {
         // converted filer should not have any BBOX capabilities
         assertEquals(bboxCapabilities.supports(convFilter), false);
 
+        Filter expected =
+                ff.or(
+                        Arrays.asList(
+                                getTargetFilter(-2d, -2d, 2d, 2d, ff),
+                                getTargetFilter(-1d, -1d, 1d, 1d, ff),
+                                nonSpatial));
+        // similar filters should produce some result on toString()
+        assertEquals(convFilter.toString(), expected.toString());
+
         // Now check with And
 
         Filter filterAnd = ff.and(Arrays.asList(bbox1, bbox2, nonSpatial));
@@ -374,6 +383,14 @@ public class LongLatGeometryGenerationStrategyTest {
         assertNotNull(convFilter);
         // converted filer should not have any BBOX capabilities
         assertEquals(bboxCapabilities.supports(convFilter), false);
+        expected =
+                ff.and(
+                        Arrays.asList(
+                                getTargetFilter(-2d, -2d, 2d, 2d, ff),
+                                getTargetFilter(-1d, -1d, 1d, 1d, ff),
+                                nonSpatial));
+
+        assertEquals(convFilter.toString(), expected.toString());
 
         // check with Not
         Filter filterNot = ff.not(bbox1);
@@ -385,6 +402,9 @@ public class LongLatGeometryGenerationStrategyTest {
         assertNotNull(convFilter);
         // converted filer should not have any BBOX capabilities
         assertEquals(bboxCapabilities.supports(convFilter), false);
+
+        expected = ff.not(getTargetFilter(-2d, -2d, 2d, 2d, ff));
+        assertEquals(convFilter.toString(), expected.toString());
     }
 
     @Test
@@ -417,5 +437,20 @@ public class LongLatGeometryGenerationStrategyTest {
         assertNotNull(convFilter);
         // converted filer should not have any BBOX capabilities
         assertEquals(bboxCapabilities.supports(convFilter), false);
+
+        Filter expetectedfilterLevel0 = ff.and(getTargetFilter(-2d, -2d, 2d, 2d, ff), nonSpatial);
+        Filter expectedLevel1 = ff.and(nonSpatial2, expetectedfilterLevel0);
+        Filter expectedLevel2 = ff.and(nonSpatial3, expectedLevel1);
+
+        assertEquals(convFilter.toString(), expectedLevel2.toString());
+    }
+
+    private static Filter getTargetFilter(
+            double minx, double miny, double maxx, double maxy, final FilterFactory ff) {
+
+        return ff.and(
+                ff.between(ff.literal(LATITUDE_PROPERTY_NAME), ff.literal(miny), ff.literal(maxy)),
+                ff.between(
+                        ff.literal(LONGITUDE_PROPERTY_NAME), ff.literal(minx), ff.literal(maxx)));
     }
 }

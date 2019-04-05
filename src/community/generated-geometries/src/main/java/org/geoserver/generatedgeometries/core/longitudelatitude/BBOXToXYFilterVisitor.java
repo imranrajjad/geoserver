@@ -16,8 +16,7 @@ import org.opengis.filter.spatial.BBOX;
 import org.opengis.geometry.BoundingBox;
 
 /**
- * @author Imran Rajjad This class converts any BBOX filter to a In Between Expression using
- *     configured X and Y fields.
+ * This class converts any BBOX filter to a In Between Expression using configured X and Y fields.
  */
 public class BBOXToXYFilterVisitor extends DuplicatingFilterVisitor {
 
@@ -50,14 +49,12 @@ public class BBOXToXYFilterVisitor extends DuplicatingFilterVisitor {
     }
 
     private And getLongLatFilters(BoundingBox bounds) {
-
         PropertyIsBetween longitudeFilter =
                 createBetweenFilter(
                         ff, configuration.longAttributeName, bounds.getMinX(), bounds.getMaxX());
         PropertyIsBetween latitudeFilter =
                 createBetweenFilter(
                         ff, configuration.latAttributeName, bounds.getMinY(), bounds.getMaxY());
-
         return ff.and(Arrays.asList(longitudeFilter, latitudeFilter));
     }
 }
