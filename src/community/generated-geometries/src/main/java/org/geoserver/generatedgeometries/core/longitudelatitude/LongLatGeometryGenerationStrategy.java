@@ -5,24 +5,25 @@
 
 package org.geoserver.generatedgeometries.core.longitudelatitude;
 
-import java.io.Serializable;
 import static java.lang.Double.valueOf;
 import static java.lang.String.format;
+import static java.util.Optional.ofNullable;
+import static java.util.logging.Level.WARNING;
+import static org.geoserver.generatedgeometries.core.GeometryGenerationStrategy.getStrategyName;
+
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import static java.util.Optional.ofNullable;
 import java.util.Set;
-import static java.util.logging.Level.WARNING;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.geoserver.catalog.FeatureTypeInfo;
 import org.geoserver.catalog.MetadataMap;
 import org.geoserver.generatedgeometries.core.GeneratedGeometryConfigurationException;
 import org.geoserver.generatedgeometries.core.GeometryGenerationStrategy;
-import static org.geoserver.generatedgeometries.core.GeometryGenerationStrategy.getStrategyName;
 import org.geotools.data.Query;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
@@ -52,11 +53,11 @@ public class LongLatGeometryGenerationStrategy
 
     private static final long serialVersionUID = 1L;
 
-    static final String NAME = "longLat";
-    static final String LONGITUDE_ATTRIBUTE_NAME = "longitudeAttributeName";
-    static final String LATITUDE_ATTRIBUTE_NAME = "latitudeAttributeName";
-    static final String GEOMETRY_ATTRIBUTE_NAME = "geometryAttributeName";
-    static final String GEOMETRY_CRS = "geometryCRS";
+    public static final String NAME = "longLat";
+    public static final String LONGITUDE_ATTRIBUTE_NAME = "longitudeAttributeName";
+    public static final String LATITUDE_ATTRIBUTE_NAME = "latitudeAttributeName";
+    public static final String GEOMETRY_ATTRIBUTE_NAME = "geometryAttributeName";
+    public static final String GEOMETRY_CRS = "geometryCRS";
 
     private final transient Map<Name, SimpleFeatureType> cache = new HashMap<>();
     private final GeometryFactory geometryFactory = JTSFactoryFinder.getGeometryFactory();
