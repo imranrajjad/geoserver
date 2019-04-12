@@ -11,6 +11,7 @@ import static org.geoserver.generatedgeometries.core.longitudelatitude.LongLatTe
 import static org.geoserver.generatedgeometries.core.longitudelatitude.LongLatTestData.LONG_LAT_NO_GEOM_ON_THE_FLY_LAYER;
 import static org.geoserver.generatedgeometries.core.longitudelatitude.LongLatTestData.LONG_LAT_NO_GEOM_ON_THE_FLY_QNAME;
 import static org.geoserver.generatedgeometries.core.longitudelatitude.LongLatTestData.LONG_LAT_QNAME;
+import static org.geoserver.generatedgeometries.core.longitudelatitude.LongLatTestData.enableGeometryGenerationStrategy;
 import static org.geoserver.generatedgeometries.core.longitudelatitude.LongLatTestData.filenameOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -27,6 +28,7 @@ import org.geoserver.catalog.FeatureTypeInfo;
 import org.geoserver.catalog.LayerInfo;
 import org.geoserver.catalog.ResourcePool;
 import org.geoserver.data.test.SystemTestData;
+import org.geoserver.generatedgeometries.core.longitudelatitude.LongLatGeometryGenerationStrategy;
 import org.geoserver.generatedgeometries.core.longitudelatitude.LongLatTestData;
 import org.geoserver.generatedgeometries.dummy.DummyGGStrategy;
 import org.geoserver.web.GeoServerApplication;
@@ -154,5 +156,23 @@ public class GeneratedGeometryConfigurationPanelTest extends GeoServerWicketTest
         // then
         DummyGGStrategy strategy = (DummyGGStrategy) applicationContext.getBean("dummyStrategy");
         assertTrue(strategy.configured);
+    }
+
+    @Test
+    public void testThatStrategyfromModelMetadataIsSelected() throws Exception {
+
+        Catalog catalog = getGeoServerApplication().getCatalog();
+        FeatureTypeInfo featureTypeInfo = getFeatureTypeInfo(LONG_LAT_QNAME);
+        // enable latlong extension on this feature type
+        enableGeometryGenerationStrategy(catalog, featureTypeInfo);
+        LayerInfo layerInfo = catalog.getLayerByName(getLayerId(LONG_LAT_QNAME));
+        login();
+
+        // open layer info page
+        tester.startPage(new ResourceConfigurationPage(layerInfo, true));
+
+        DropDownChoice<GeometryGenerationStrategyUIGenerator> dropDown = getStrategyDropDown();
+        GeometryGenerationStrategyUIGenerator selectedGeometryGenGUI = dropDown.getModelObject();
+        assertEquals(selectedGeometryGenGUI.getName(), LongLatGeometryGenerationStrategy.NAME);
     }
 }
