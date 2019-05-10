@@ -54,6 +54,7 @@ public class LongLatGeometryGenerationStrategy
     private static final long serialVersionUID = 1L;
 
     public static final String NAME = "longLat";
+
     public static final String LONGITUDE_ATTRIBUTE_NAME = "longitudeAttributeName";
     public static final String LATITUDE_ATTRIBUTE_NAME = "latitudeAttributeName";
     public static final String GEOMETRY_ATTRIBUTE_NAME = "geometryAttributeName";
@@ -109,6 +110,7 @@ public class LongLatGeometryGenerationStrategy
     @Override
     public void configure(FeatureTypeInfo info) {
         info.setSRS(CRS.toSRS(getLongLatConfiguration(info).crs));
+        info.setNativeCRS(getLongLatConfiguration(info).crs);
         featureTypeInfos.add(info.getId());
     }
 
