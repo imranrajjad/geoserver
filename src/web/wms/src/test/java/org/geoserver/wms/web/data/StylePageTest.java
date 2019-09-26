@@ -126,15 +126,12 @@ public class StylePageTest extends GeoServerWicketTestSupport {
         assertTrue(provider.getProperties().contains(StyleProvider.MODIFIED_TIMESTAMP));
     }
 
+    @Test
     public void testFilter() {
         login();
         Catalog catalog = getCatalog();
-
         tester.startPage(StylePage.class);
         tester.assertRenderedPage(StylePage.class);
-
-        // Get the StyleProvider
-
         DataView dv =
                 (DataView) tester.getComponentFromLastRenderedPage("table:listContainer:items");
 
@@ -180,12 +177,8 @@ public class StylePageTest extends GeoServerWicketTestSupport {
         Catalog catalog = getCatalog();
         tester.startPage(StylePage.class);
         tester.assertRenderedPage(StylePage.class);
-
-        // Get the StyleProvider
-
         DataView dv =
                 (DataView) tester.getComponentFromLastRenderedPage("table:listContainer:items");
-
         assertEquals(dv.size(), catalog.getStyles().size());
         // apply filter by only viewing style with name polygon
         FormTester ft = tester.newFormTester("table:filterForm");
