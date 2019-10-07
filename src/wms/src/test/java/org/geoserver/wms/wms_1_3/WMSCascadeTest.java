@@ -7,15 +7,22 @@ package org.geoserver.wms.wms_1_3;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-
+import static org.junit.Assert.assertTrue;
+import java.awt.image.BufferedImage;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import javax.imageio.ImageIO;
+import org.apache.http.HttpStatus;
 import org.custommonkey.xmlunit.NamespaceContext;
 import org.custommonkey.xmlunit.SimpleNamespaceContext;
+import org.geoserver.catalog.LayerInfo;
+import org.geoserver.catalog.WMSLayerInfo;
 import org.geoserver.config.GeoServer;
 import org.geoserver.data.test.SystemTestData;
 import org.geoserver.test.http.MockHttpResponse;
@@ -23,6 +30,10 @@ import org.geoserver.wms.WMS;
 import org.geoserver.wms.WMSCascadeTestSupport;
 import org.geoserver.wms.WMSInfo;
 import org.geoserver.wms.WMSTestSupport;
+import org.geoserver.wms.legendgraphic.JSONLegendGraphicBuilder;
+import org.geotools.image.test.ImageAssert;
+import org.geotools.ows.wms.WebMapServer;
+import org.geotools.ows.wms.request.GetLegendGraphicRequest;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -30,6 +41,9 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.w3c.dom.Document;
+import net.sf.json.JSON;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
 
 @RunWith(Parameterized.class)
 public class WMSCascadeTest extends WMSCascadeTestSupport {
@@ -194,5 +208,105 @@ public class WMSCascadeTest extends WMSCascadeTestSupport {
         assertThat(coordinates.length, is(2));
         checkNumberSimilar(coordinates[0], -11556867.874, 0.0001);
         checkNumberSimilar(coordinates[1], 5527291.47718493, 0.0001);
+    }
+
+    @Test
+    public void testCascadedSettings() throws Exception {
+
+        LayerInfo info = getCatalog().getLayerByName("roads_wms_130");
+
+        info.toString();
+
+        String getMapRequest =
+                "wms?bbox=589434.85646865,4914006.33783702,609527.21021496,4928063.39801461"
+                        + "&styles=line1&layers="
+                        + info.getName()
+                        + "&Format=image/png"
+                        + "&request=GetMap&version=1.3.0&service=wms"
+                        + "&width=180&height=90&crs=EPSG:26713";
+
+        // the request should generate exepected remote WMS URL
+        // e.g default remote style, correct image format
+        BufferedImage response = getAsImage(getMapRequest, "image/png");
+        assertNotNull(response);
+
+        // below request should force geoserver to request in default format
+        String getMapUnsupportedRequest =
+                "wms?bbox=589434.85646865,4914006.33783702,609527.21021496,4928063.39801461"
+                        + "&styles=line1&layers="
+                        + info.getName()
+                        + "&Format=image/gif"
+                        + "&request=GetMap&version=1.3.0&service=wms"
+                        + "&width=180&height=90&crs=EPSG:26713";
+
+        // the request should generate exepected remote WMS URL
+        // e.g default forced remote style and jpeg format in remote style
+        // correct image format because gif is not part of cap doc
+        // the mock client is not expecting a remote request in image/gif
+        response = getAsImage(getMapUnsupportedRequest, "image/gif");
+        assertNotNull(response);
+    }
+
+    @Test
+    public void testCascadeGetLegendRequest() throws Exception {
+
+        URL exptectedResponse = this.getClass().getResource("../cascadedLegend.png");
+        URL rasterLegendresource = this.getClass().getResource("../rasterLegend.png");
+        BufferedImage expected = ImageIO.read(exptectedResponse);
+
+        WMSLayerInfo layerInfo =
+                (WMSLayerInfo) getCatalog().getLayerByName(WORLD4326_110).getResource();
+        WebMapServer webMapServer = layerInfo.getStore().getWebMapServer(null);
+        // setting URL of local file for mock response
+        webMapServer
+                .getCapabilities()
+                .getRequest()
+                .getGetLegendGraphic()
+                .setGet(rasterLegendresource);
+        GetLegendGraphicRequest getLegend = webMapServer.createGetLegendGraphicRequest();
+
+        BufferedImage image =
+                getAsImage(
+                        "wms?service=WMS&version=1.3.0&request=GetLegendGraphic"
+                                + "&layer="
+                                + WORLD4326_110
+                                + "&format=image/png&width=20&height=20&transparent=true",
+                        "image/png");
+
+        assertNotNull(image);
+        ImageAssert.assertEquals(expected, image, 0);
+    }
+
+    @Test
+    public void testCascadeGetLegendRequestJSON() throws Exception {
+        assertTrue(true);
+
+        WMSLayerInfo layerInfo =
+                (WMSLayerInfo) getCatalog().getLayerByName(WORLD4326_110).getResource();
+        WebMapServer webMapServer = layerInfo.getStore().getWebMapServer(null);
+        // setting up OperationType
+        // webMapServer.getCapabilities().getRequest().setGetLegendGraphic(new OperationType());
+        // assert that webserver can make getLegend requests
+        GetLegendGraphicRequest getLegend = webMapServer.createGetLegendGraphicRequest();
+        assertNotNull(getLegend);
+
+        JSON dom =
+                getAsJSON(
+                        "wms?service=WMS&version=1.3.0&request=GetLegendGraphic"
+                                + "&layer="
+                                + WORLD4326_110
+                                + "&format=application/json",
+                        HttpStatus.SC_OK);
+
+        print(dom);
+        JSONObject responseJson = JSONObject.fromObject(dom.toString());
+        assertTrue(responseJson.has(JSONLegendGraphicBuilder.LEGEND));
+
+        JSONArray legendArray = responseJson.getJSONArray(JSONLegendGraphicBuilder.LEGEND);
+        assertFalse(legendArray.isEmpty());
+
+        JSONArray rulesJSONArray =
+                legendArray.getJSONObject(0).getJSONArray(JSONLegendGraphicBuilder.RULES);
+        assertFalse(rulesJSONArray.isEmpty());
     }
 }
