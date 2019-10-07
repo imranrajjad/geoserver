@@ -47,4 +47,8 @@ public interface ModuleStatus {
 
     /** Optional relative link to GeoServer user manual */
     Optional<String> getDocumentation();
+
+    default boolean hasCapability(ModuleCapabilities capability) {
+        return false;
+    }
 }
