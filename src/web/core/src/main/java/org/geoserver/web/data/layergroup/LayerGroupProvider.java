@@ -41,7 +41,6 @@ public class LayerGroupProvider extends GeoServerDataProvider<LayerGroupInfo> {
     static final Property<LayerGroupInfo> CREATED_TIMESTAMP =
             new BeanProperty<>("datecreated", "dateCreated");
 
-
     protected LayerGroupProviderFilter groupFilter = null;
 
     public LayerGroupProvider() {}

@@ -8,6 +8,7 @@ package org.geoserver.wms.wms_1_1_1;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+
 import java.awt.image.BufferedImage;
 import java.net.URL;
 import java.util.Arrays;
@@ -32,9 +33,6 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.w3c.dom.Document;
-import net.sf.json.JSON;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
 
 @RunWith(Parameterized.class)
 public class WMSCascadeTest extends WMSCascadeTestSupport {

@@ -81,7 +81,8 @@ public class LayerGroupPage extends GeoServerSecuredPage {
                                     return new DateTimeLabel(
                                             id,
                                             LayerGroupProvider.CREATED_TIMESTAMP.getModel(
-                                                    itemModel));                                }
+                                                    itemModel));
+                                }
                                 return null;
                             }
 
