@@ -315,4 +315,11 @@
   </bean>
 
     <bean id="nearestMatchWarningAppender" class="org.geoserver.util.NearestMatchWarningAppender"/>
+    
+    <bean id="geoserverURLConfigService" class="org.geoserver.security.urlchecker.GeoserverURLConfigService">
+        <constructor-arg ref="resourceLoader"/>
+        <constructor-arg ref="xstreamPersisterFactory"/>
+    </bean>
+    
+    
 </beans>

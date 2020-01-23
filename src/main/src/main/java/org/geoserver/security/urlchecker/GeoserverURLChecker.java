@@ -1,0 +1,122 @@
+/* (c) 2020 Open Source Geospatial Foundation - all rights reserved
+ * This code is licensed under the GPL 2.0 license, available at the root
+ * application directory.
+ */
+package org.geoserver.security.urlchecker;
+
+import java.io.Serializable;
+import java.util.List;
+import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import org.geotools.data.ows.URLChecker;
+import org.geotools.util.logging.Logging;
+
+/** @author ImranR */
+public class GeoserverURLChecker implements URLChecker, Serializable, Cloneable {
+
+    static final Logger LOGGER = Logging.getLogger(GeoserverURLChecker.class.getCanonicalName());
+    
+    /** serialVersionUID */
+    private static final long serialVersionUID = -7056796646665162468L;
+
+    private boolean enabled;
+
+    private List<URLEntry> regexList;
+
+    public GeoserverURLChecker(List<URLEntry> regexList) {
+        this.regexList = regexList;
+    }
+
+    /** @return the regexList */
+    public List<URLEntry> getRegexList() {
+        return regexList;
+    }
+
+    /** @param regexList the regexList to set */
+    public void setRegexList(List<URLEntry> regexList) {
+        this.regexList = regexList;
+    }
+
+    /** @param enabled the enabled to set */
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    @Override
+    public String getName() {
+        return "Geoserver";
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    @Override
+    public boolean evaluate(String url) {
+        if(url == null) return false;
+        else if(url.isEmpty()) return false;
+        List<URLEntry> enabledUrlList=getEnabled();
+        //ignore 
+        if(enabledUrlList.isEmpty()) return true;
+        
+        
+        for(URLEntry u:enabledUrlList) {
+            if(url.matches(u.getRegexExpression())) {
+                if(LOGGER.isLoggable(Level.FINE)){
+                    LOGGER.log(Level.FINE, url+" has matched regex "+u.getRegexExpression());
+                }
+                return true;  
+            } 
+        }
+        
+        if(LOGGER.isLoggable(Level.FINE)){
+            LOGGER.log(Level.FINE, url+" did not match any REGEX");
+        }
+        
+        return false;
+    }
+    
+    private List<URLEntry> getEnabled(){
+        return regexList.stream().filter(e->e.isEnable()).collect(Collectors.toList());
+    }
+
+    protected void addURLEntry(URLEntry urlEntry) {
+        if (urlEntry == null) return;
+        if (urlEntry.getName() == null) return;
+        if (urlEntry.getName().isEmpty()) return;
+
+        int idx = regexList.indexOf(urlEntry);
+
+        if (idx == -1) regexList.add(urlEntry);
+        else regexList.set(idx, urlEntry);
+    }
+
+    protected boolean removeURLEntry(List<URLEntry> deleteList) {
+        return regexList.removeAll(deleteList);
+    }
+
+    public URLEntry get(final String urlEntryName) {
+        Optional<URLEntry> entry =
+                regexList
+                        .stream()
+                        .filter(urlEntry -> urlEntry.getName().equalsIgnoreCase(urlEntryName))
+                        .findFirst();
+        if (entry.isPresent()) return entry.get();
+        else return null;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof GeoserverURLChecker)) return false;
+        GeoserverURLChecker other = (GeoserverURLChecker) obj;
+        return getName().equalsIgnoreCase(other.getName());
+    }
+
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        return super.clone();
+    }
+}
