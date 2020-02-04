@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import org.geoserver.ows.Dispatcher;
 import org.geotools.data.ows.URLChecker;
 import org.geotools.util.logging.Logging;
 
@@ -56,6 +57,10 @@ public class GeoserverURLChecker implements URLChecker, Serializable, Cloneable 
 
     @Override
     public boolean evaluate(String url) {
+        if(Dispatcher.REQUEST.get() == null) {
+            //ignore calls made from admin console
+            return true;
+        }
         if(url == null) return false;
         else if(url.isEmpty()) return false;
         List<URLEntry> enabledUrlList=getEnabled();

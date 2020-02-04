@@ -41,6 +41,7 @@ import org.geoserver.config.GeoServerInfo;
 import org.geoserver.data.test.MockData;
 import org.geoserver.data.test.SystemTestData;
 import org.geoserver.data.test.TestData;
+import org.geoserver.feature.retype.RetypingDataStore;
 import org.geoserver.platform.GeoServerEnvironment;
 import org.geoserver.platform.GeoServerExtensions;
 import org.geoserver.test.GeoServerSystemTestSupport;
@@ -55,9 +56,11 @@ import org.geotools.coverage.util.CoverageUtilities;
 import org.geotools.data.DataAccess;
 import org.geotools.data.DataStore;
 import org.geotools.data.Query;
+import org.geotools.data.ows.ControlledHttpClient;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.data.simple.SimpleFeatureStore;
+import org.geotools.data.wfs.WFSDataStore;
 import org.geotools.data.wfs.WFSDataStoreFactory;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.NameImpl;
@@ -640,6 +643,22 @@ public class ResourcePoolTest extends GeoServerSystemTestSupport {
             assertThat(message, containsString("Entity resolution disallowed"));
             assertThat(message, containsString("file:///file/not/there"));
         }
+    }
+    
+    @Test
+    public void testWfsCascadeSecurityClient() throws Exception {
+        CatalogBuilder cb = new CatalogBuilder(getCatalog());
+        DataStoreInfo ds = cb.buildDataStore("wfs-secured");
+        URL url = getClass().getResource("wfs_cap_110.xml");
+        ds.getConnectionParameters().put(WFSDataStoreFactory.URL.key, url);
+        // required or the store won't fetch caps from a file
+        ds.getConnectionParameters().put("TESTING", Boolean.TRUE);
+        ds.getConnectionParameters().put(WFSDataStoreFactory.SECURED_HTTP_CLIENT.key, Boolean.TRUE);
+        final ResourcePool rp = getCatalog().getResourcePool();
+        RetypingDataStore dac =(RetypingDataStore) rp.getDataStore(ds);        
+        WFSDataStore wfsDS=(WFSDataStore) dac.getWrapped();
+        assertTrue(wfsDS.getWfsClient().getHTTPClient() instanceof ControlledHttpClient);
+
     }
 
     @Test

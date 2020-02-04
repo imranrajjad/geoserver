@@ -11,6 +11,7 @@ import static org.junit.Assert.assertTrue;
 import org.geoserver.platform.GeoServerExtensions;
 import org.geoserver.security.urlchecker.GeoserverURLChecker;
 import org.geoserver.security.urlchecker.GeoserverURLConfigService;
+import org.geoserver.security.urlchecker.URLEntry;
 import org.geoserver.test.GeoServerSystemTestSupport;
 import org.geotools.data.ows.URLCheckerFactory;
 import org.junit.Before;
@@ -42,6 +43,19 @@ public class GeoserverURLCheckerTests extends GeoServerSystemTestSupport {
         assertTrue(URLCheckerFactory.getUrlCheckerList().size() == 1);
     }
 
-    // TODO add regex validation tests
 
+    @Test
+    public void testEvaluation() throws Exception {
+        URLEntry googleOnly = new URLEntry("google only",
+                "only allow url starting with http://www.google.com",
+                "^(http://www.google).*$");        
+        configBean.addAndsave(googleOnly);
+      //disable default entry
+        GeoserverURLChecker checker = configBean.reload();
+        checker.get("generic").setEnable(false);
+        assertTrue(checker.evaluate("http://"));
+        
+        //TODO
+        
+    }
 }
