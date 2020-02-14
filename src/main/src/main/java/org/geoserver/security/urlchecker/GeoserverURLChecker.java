@@ -18,7 +18,7 @@ import org.geotools.util.logging.Logging;
 public class GeoserverURLChecker implements URLChecker, Serializable, Cloneable {
 
     static final Logger LOGGER = Logging.getLogger(GeoserverURLChecker.class.getCanonicalName());
-    
+
     /** serialVersionUID */
     private static final long serialVersionUID = -7056796646665162468L;
 
@@ -57,35 +57,34 @@ public class GeoserverURLChecker implements URLChecker, Serializable, Cloneable 
 
     @Override
     public boolean evaluate(String url) {
-        if(Dispatcher.REQUEST.get() == null) {
-            //ignore calls made from admin console
+        if (Dispatcher.REQUEST.get() == null) {
+            // ignore calls made from admin console
             return true;
         }
-        if(url == null) return false;
-        else if(url.isEmpty()) return false;
-        List<URLEntry> enabledUrlList=getEnabled();
-        //ignore 
-        if(enabledUrlList.isEmpty()) return true;
-        
-        
-        for(URLEntry u:enabledUrlList) {
-            if(url.matches(u.getRegexExpression())) {
-                if(LOGGER.isLoggable(Level.FINE)){
-                    LOGGER.log(Level.FINE, url+" has matched regex "+u.getRegexExpression());
+        if (url == null) return false;
+        else if (url.isEmpty()) return false;
+        List<URLEntry> enabledUrlList = getEnabled();
+        // ignore
+        if (enabledUrlList.isEmpty()) return true;
+
+        for (URLEntry u : enabledUrlList) {
+            if (url.matches(u.getRegexExpression())) {
+                if (LOGGER.isLoggable(Level.FINE)) {
+                    LOGGER.log(Level.FINE, url + " has matched regex " + u.getRegexExpression());
                 }
-                return true;  
-            } 
+                return true;
+            }
         }
-        
-        if(LOGGER.isLoggable(Level.FINE)){
-            LOGGER.log(Level.FINE, url+" did not match any REGEX");
+
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.log(Level.FINE, url + " did not match any REGEX");
         }
-        
+
         return false;
     }
-    
-    private List<URLEntry> getEnabled(){
-        return regexList.stream().filter(e->e.isEnable()).collect(Collectors.toList());
+
+    private List<URLEntry> getEnabled() {
+        return regexList.stream().filter(e -> e.isEnable()).collect(Collectors.toList());
     }
 
     protected void addURLEntry(URLEntry urlEntry) {

@@ -6,10 +6,26 @@
 
 package org.geoserver.catalog;
 
-import static org.easymock.EasyMock.*;
+import static org.easymock.EasyMock.capture;
+import static org.easymock.EasyMock.createNiceMock;
+import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.replay;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.awt.image.RenderedImage;
 import java.io.File;
@@ -47,6 +63,8 @@ import org.geoserver.platform.GeoServerExtensions;
 import org.geoserver.test.GeoServerSystemTestSupport;
 import org.geoserver.test.RunTestSetup;
 import org.geoserver.test.SystemTest;
+import org.geoserver.test.http.MockHttpClient;
+import org.geoserver.test.http.MockHttpResponse;
 import org.geotools.coverage.grid.GridCoverage2D;
 import org.geotools.coverage.grid.io.AbstractGridCoverage2DReader;
 import org.geotools.coverage.grid.io.AbstractGridFormat;
@@ -73,6 +91,7 @@ import org.geotools.jdbc.JDBCDataStore;
 import org.geotools.jdbc.VirtualTable;
 import org.geotools.jdbc.VirtualTableParameter;
 import org.geotools.ows.ServiceException;
+import org.geotools.ows.wms.WebMapServer;
 import org.geotools.styling.AbstractStyleVisitor;
 import org.geotools.styling.Mark;
 import org.geotools.styling.PolygonSymbolizer;
@@ -644,7 +663,7 @@ public class ResourcePoolTest extends GeoServerSystemTestSupport {
             assertThat(message, containsString("file:///file/not/there"));
         }
     }
-    
+
     @Test
     public void testWfsCascadeSecurityClient() throws Exception {
         CatalogBuilder cb = new CatalogBuilder(getCatalog());
@@ -655,10 +674,9 @@ public class ResourcePoolTest extends GeoServerSystemTestSupport {
         ds.getConnectionParameters().put("TESTING", Boolean.TRUE);
         ds.getConnectionParameters().put(WFSDataStoreFactory.SECURED_HTTP_CLIENT.key, Boolean.TRUE);
         final ResourcePool rp = getCatalog().getResourcePool();
-        RetypingDataStore dac =(RetypingDataStore) rp.getDataStore(ds);        
-        WFSDataStore wfsDS=(WFSDataStore) dac.getWrapped();
+        RetypingDataStore dac = (RetypingDataStore) rp.getDataStore(ds);
+        WFSDataStore wfsDS = (WFSDataStore) dac.getWrapped();
         assertTrue(wfsDS.getWfsClient().getHTTPClient() instanceof ControlledHttpClient);
-
     }
 
     @Test
@@ -871,5 +889,36 @@ public class ResourcePoolTest extends GeoServerSystemTestSupport {
         assertNotNull(featureDefaultGeometry);
         assertEquals("pointProperty", schemaDefaultGeometry.getLocalName());
         assertEquals(schemaDefaultGeometry, featureDefaultGeometry);
+    }
+
+    @Test
+    public void testSecuredHttpClient() throws Exception {
+
+        // Other tests mess with or reset the resourcePool, so lets make it is initialized properly
+        GeoServerExtensions.extensions(ResourcePoolInitializer.class)
+                .get(0)
+                .initialize(getGeoServer());
+
+        MockHttpClient wms11Client = new MockHttpClient();
+        URL wms13BaseURL = new URL(TestHttpClientProvider.MOCKSERVER + "/wms11");
+        URL capsDocument = getClass().getResource("caps111.xml");
+        String caps = wms13BaseURL + "?service=WMS&request=GetCapabilities&version=1.1.1";
+
+        wms11Client.expectGet(new URL(caps), new MockHttpResponse(capsDocument, "text/xml"));
+
+        TestHttpClientProvider.bind(wms11Client, caps);
+
+        ResourcePool rp = getCatalog().getResourcePool();
+
+        WMSStoreInfo info = getCatalog().getFactory().createWebMapServer();
+        info.setCapabilitiesURL(caps);
+        info.setEnabled(true);
+        // the connection pooling client does not support file references, disable it
+        info.setUseConnectionPooling(false);
+        // enable controlled http client
+        info.setUseSecuredHttp(true);
+
+        WebMapServer wms = rp.getWebMapServer(info);
+        assertTrue(wms.getHTTPClient() instanceof ControlledHttpClient);
     }
 }

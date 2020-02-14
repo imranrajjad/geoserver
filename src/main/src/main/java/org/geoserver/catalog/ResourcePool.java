@@ -1940,6 +1940,7 @@ public class ResourcePool {
         if (TestHttpClientProvider.testModeEnabled()
                 && capabilitiesURL.startsWith(TestHttpClientProvider.MOCKSERVER)) {
             HTTPClient client = TestHttpClientProvider.get(capabilitiesURL);
+            if (info.isUseSecuredHttp()) client = ControlledHttpClientFactory.wrap(client);
             return client;
         }
 

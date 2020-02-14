@@ -72,7 +72,11 @@ public class GeoserverURLConfigService {
 
     private synchronized GeoserverURLChecker createFromScatch() {
         ArrayList<URLEntry> list = new ArrayList<URLEntry>();
-        list.add(new URLEntry("generic", "allow http connections and disk access", "^(http|https|file)://.*$"));
+        list.add(
+                new URLEntry(
+                        "generic",
+                        "allow http connections and disk access",
+                        "^(http|https|file)://.*$"));
         GeoserverURLChecker gsURLChecker = new GeoserverURLChecker(list);
         gsURLChecker.setEnabled(false);
         return gsURLChecker;

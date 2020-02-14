@@ -43,19 +43,20 @@ public class GeoserverURLCheckerTests extends GeoServerSystemTestSupport {
         assertTrue(URLCheckerFactory.getUrlCheckerList().size() == 1);
     }
 
-
     @Test
     public void testEvaluation() throws Exception {
-        URLEntry googleOnly = new URLEntry("google only",
-                "only allow url starting with http://www.google.com",
-                "^(http://www.google).*$");        
+        URLEntry googleOnly =
+                new URLEntry(
+                        "google only",
+                        "only allow url starting with http://www.google.com",
+                        "^(http://www.google).*$");
         configBean.addAndsave(googleOnly);
-      //disable default entry
+        // disable default entry
         GeoserverURLChecker checker = configBean.reload();
         checker.get("generic").setEnable(false);
         assertTrue(checker.evaluate("http://"));
-        
-        //TODO
-        
+
+        // TODO
+
     }
 }
