@@ -30,6 +30,7 @@ import org.geoserver.wps.transmute.GML2PolygonTransmuter;
 import org.geoserver.wps.transmute.LiteralTransmuter;
 import org.geoserver.wps.transmute.Transmuter;
 import org.geotools.data.Parameter;
+import org.geotools.data.ows.URLCheckerFactory;
 import org.geotools.process.ProcessFactory;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
@@ -139,8 +140,11 @@ public class DataTransformer {
 
         try {
             url = new URL(reference.getHref());
+            URLCheckerFactory.evaluate(url);
         } catch (MalformedURLException e) {
             throw new WPSException("NoApplicableCode", "Malformed parameter URL.");
+        } catch (IOException io) {
+            throw new WPSException(io.getMessage(), io);
         }
 
         try {

@@ -187,7 +187,7 @@ abstract class AbstractWMSStorePage extends GeoServerSecuredPage {
                         namePanel.getFormComponent(),
                         store.getId());
         form.add(storeNameValidator);
-        
+
         form.add(
                 new CheckBoxParamPanel(
                         "useSecuredHttpPanel",

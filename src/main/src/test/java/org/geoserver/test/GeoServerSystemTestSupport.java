@@ -113,6 +113,8 @@ import org.geoserver.security.impl.GeoServerUserGroup;
 import org.geoserver.security.password.GeoServerDigestPasswordEncoder;
 import org.geoserver.security.password.GeoServerPBEPasswordEncoder;
 import org.geoserver.security.password.GeoServerPlainTextPasswordEncoder;
+import org.geoserver.security.urlchecker.GeoserverURLConfigService;
+import org.geoserver.security.urlchecker.URLEntry;
 import org.geoserver.util.EntityResolverProvider;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureSource;
@@ -198,6 +200,9 @@ public class GeoServerSystemTestSupport extends GeoServerBaseTestSupport<SystemT
 
     /** Cached dispatcher, it has its own app context, so it's expensive to build */
     protected static DispatcherServlet dispatcher;
+
+    /** URL Profiling service, it will be disabled by default */
+    protected GeoserverURLConfigService geoserverURLConfigServiceBean;
 
     /**
      * In IDEs during development GeoTools sources can be in the classpath of GeoServer tests, this
@@ -320,6 +325,7 @@ public class GeoServerSystemTestSupport extends GeoServerBaseTestSupport<SystemT
 
             // Allow resolution of XSDs from local file system
             EntityResolverProvider.setEntityResolver(RESOLVE_DISABLED_PROVIDER_DEVMODE);
+            initEmptyGeoserverURLConfigServiceBean();
 
             onSetUp(testData);
         }
@@ -2548,5 +2554,29 @@ public class GeoServerSystemTestSupport extends GeoServerBaseTestSupport<SystemT
         catalog.add(copyLayerInfo);
         // retrieve the cloned layer by name
         return catalog.getLayerByName(new NameImpl(targetNameSpace.getPrefix(), targetLayerName));
+    }
+
+    public void initEmptyGeoserverURLConfigServiceBean() throws Exception {
+        geoserverURLConfigServiceBean = GeoServerExtensions.bean(GeoserverURLConfigService.class);
+    }
+
+    @Before
+    @After
+    public void emptyGeoserverURLConfigServiceBean() throws Exception {
+        geoserverURLConfigServiceBean.removeAndsave(
+                geoserverURLConfigServiceBean.getGeoserverURLChecker().getRegexList());
+    }
+
+    public void AddURLEntryGeoserverURLConfigService(URLEntry urlEntry) throws Exception {
+        geoserverURLConfigServiceBean.addAndsave(urlEntry);
+    }
+
+    public void removeURLEntry(URLEntry urlEntry) throws Exception {
+        geoserverURLConfigServiceBean.removeAndsave(Arrays.asList(urlEntry));
+    }
+
+    public void EnableGeoserverURLConfigService(boolean enabled) throws Exception {
+        geoserverURLConfigServiceBean.getGeoserverURLChecker().setEnabled(enabled);
+        geoserverURLConfigServiceBean.save();
     }
 }

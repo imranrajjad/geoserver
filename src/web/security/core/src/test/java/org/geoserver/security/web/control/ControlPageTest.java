@@ -12,7 +12,6 @@ import java.util.Arrays;
 import org.apache.wicket.markup.repeater.data.DataView;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.apache.wicket.util.tester.FormTester;
-import org.geoserver.security.urlchecker.GeoserverURLConfigService;
 import org.geoserver.security.urlchecker.URLEntry;
 import org.geoserver.web.GeoServerWicketTestSupport;
 import org.geoserver.web.wicket.GeoServerTablePanel;
@@ -33,7 +32,8 @@ public class ControlPageTest extends GeoServerWicketTestSupport {
                 (DataView) tester.getComponentFromLastRenderedPage("table:listContainer:items");
         assertEquals(
                 dv.size(),
-                GeoserverURLConfigService.getSingleton()
+                geoserverURLConfigServiceBean
+                        .getSingleton()
                         .getGeoserverURLChecker()
                         .getRegexList()
                         .size());
@@ -60,10 +60,10 @@ public class ControlPageTest extends GeoServerWicketTestSupport {
 
         tester.assertRenderedPage(ControlPage.class);
         URLEntry testURLEntry =
-                GeoserverURLConfigService.getSingleton().getGeoserverURLChecker().get("test");
+                geoserverURLConfigServiceBean.getSingleton().getGeoserverURLChecker().get("test");
         assertNotNull(testURLEntry);
         // finally remove
-        GeoserverURLConfigService.getSingleton().removeAndsave(Arrays.asList(testURLEntry));
+        geoserverURLConfigServiceBean.getSingleton().removeAndsave(Arrays.asList(testURLEntry));
     }
 
     @Test
@@ -110,7 +110,7 @@ public class ControlPageTest extends GeoServerWicketTestSupport {
         ft.submit("submit");
         tester.assertRenderedPage(ControlPage.class);
         URLEntry testURLEntry =
-                GeoserverURLConfigService.getSingleton().getGeoserverURLChecker().get("test");
+                geoserverURLConfigServiceBean.getSingleton().getGeoserverURLChecker().get("test");
         assertNotNull(testURLEntry);
 
         PageParameters params = new PageParameters();
@@ -126,11 +126,11 @@ public class ControlPageTest extends GeoServerWicketTestSupport {
 
         // find the modified bean and assert changes
         URLEntry modified =
-                GeoserverURLConfigService.getSingleton().getGeoserverURLChecker().get("test");
+                geoserverURLConfigServiceBean.getSingleton().getGeoserverURLChecker().get("test");
         assertTrue(modified.getDescription().equalsIgnoreCase("modfied"));
 
         // clean up
-        GeoserverURLConfigService.getSingleton().removeAndsave(Arrays.asList(testURLEntry));
+        geoserverURLConfigServiceBean.getSingleton().removeAndsave(Arrays.asList(testURLEntry));
     }
 
     @Test
@@ -149,7 +149,7 @@ public class ControlPageTest extends GeoServerWicketTestSupport {
         ft.submit("submit");
         tester.assertRenderedPage(ControlPage.class);
         URLEntry testURLEntry =
-                GeoserverURLConfigService.getSingleton().getGeoserverURLChecker().get("test");
+                geoserverURLConfigServiceBean.getSingleton().getGeoserverURLChecker().get("test");
         assertNotNull(testURLEntry);
 
         GeoServerTablePanel<URLEntry> table =
@@ -170,7 +170,8 @@ public class ControlPageTest extends GeoServerWicketTestSupport {
 
         assertEquals(
                 table.getDataProvider().size(),
-                GeoserverURLConfigService.getSingleton()
+                geoserverURLConfigServiceBean
+                        .getSingleton()
                         .getGeoserverURLChecker()
                         .getRegexList()
                         .size());

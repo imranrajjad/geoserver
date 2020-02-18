@@ -32,6 +32,7 @@ import org.geoserver.security.SecurityUtils;
 import org.geoserver.security.config.SecurityNamedServiceConfig;
 import org.geoserver.security.validation.SecurityConfigException;
 import org.geoserver.security.validation.SecurityConfigValidator;
+import org.geotools.data.ows.URLCheckerFactory;
 import org.geotools.util.URLs;
 import org.jasypt.encryption.pbe.StandardPBEByteEncryptor;
 
@@ -166,6 +167,7 @@ public final class URLMasterPasswordProvider extends MasterPasswordProvider {
     }
 
     static InputStream input(URL url, Resource configDir) throws IOException {
+        URLCheckerFactory.evaluate(url);
         // check for a file url
         if ("file".equalsIgnoreCase(url.getProtocol())) {
             File f = URLs.urlToFile(url);
