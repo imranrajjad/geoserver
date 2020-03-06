@@ -7,56 +7,93 @@ package org.geoserver.config.util;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-import org.geoserver.platform.GeoServerExtensions;
+import java.net.URL;
+import org.geoserver.ows.Dispatcher;
+import org.geoserver.ows.Request;
 import org.geoserver.security.urlchecker.GeoserverURLChecker;
-import org.geoserver.security.urlchecker.GeoserverURLConfigService;
 import org.geoserver.security.urlchecker.URLEntry;
 import org.geoserver.test.GeoServerSystemTestSupport;
 import org.geotools.data.ows.URLCheckerFactory;
 import org.junit.Before;
 import org.junit.Test;
+import org.vfny.geoserver.util.Requests;
 
-/** @author ImranR */
 public class GeoserverURLCheckerTests extends GeoServerSystemTestSupport {
-
-    static GeoserverURLConfigService configBean;
 
     @Before
     public void setUp() throws Exception {
-        // instantiate bean
-        configBean = GeoServerExtensions.bean(GeoserverURLConfigService.class);
-        // verify
-        assertNotNull(configBean);
+        // assert bean exists
+        //  assertNotNull(GeoserverURLConfigService.getSingleton());
         // verify SPI Factory has the bean registered
         assertFalse(URLCheckerFactory.getUrlCheckerList().isEmpty());
     }
 
     @Test
     public void testBasicReadWrite() throws Exception {
-        GeoserverURLChecker checker = configBean.reload();
+
+        GeoserverURLChecker checker = super.geoserverURLConfigServiceBean.reload();
         assertNotNull(checker);
         // modify
         checker.setEnabled(true);
-        checker = configBean.save();
+        checker = super.geoserverURLConfigServiceBean.save();
         assertTrue(checker.isEnabled());
         assertTrue(URLCheckerFactory.getUrlCheckerList().size() == 1);
     }
 
     @Test
     public void testEvaluation() throws Exception {
+        enableGeoserverURLConfigService(true);
+        // Geoserver URLChecker implementation works with REST calls only
+        Dispatcher.REQUEST.set(new Request());
         URLEntry googleOnly =
                 new URLEntry(
                         "google only",
                         "only allow url starting with http://www.google.com",
                         "^(http://www.google).*$");
-        configBean.addAndsave(googleOnly);
+        addURLEntryGeoserverURLConfigService(googleOnly);
+        // GeoserverURLConfigService.getSingleton().addAndsave(googleOnly);
         // disable default entry
-        GeoserverURLChecker checker = configBean.reload();
-        checker.get("generic").setEnable(false);
-        assertTrue(checker.evaluate("http://"));
 
-        // TODO
+        GeoserverURLChecker checker = super.geoserverURLConfigServiceBean.reload();
+        checker.get("google only").setEnable(true);
 
+        // evaluate though Factory methods
+        assertTrue(URLCheckerFactory.evaluate("http://www.google.com/some/service"));
+        try {
+            assertFalse(URLCheckerFactory.evaluate("http://www.yahoo.com/some/service"));
+            fail();
+        } catch (Exception e) {
+            // assert the exception is coming from GeoserverURLConfigService
+            assertTrue(e.getMessage().contains("Evaluation Failure"));
+        }
+    }
+
+    @Test
+    public void testRequestsUtilEvaluation() throws Exception {
+        // tests static methods in  org.vfny.geoserver.util.Requests
+        enableGeoserverURLConfigService(true);
+        // Geoserver URLChecker implementation works with REST calls only
+        Dispatcher.REQUEST.set(new Request());
+
+        enableGeoserverURLConfigService(true);
+        // Geoserver URLChecker implementation works with REST calls only
+        Dispatcher.REQUEST.set(new Request());
+        URLEntry googleOnly =
+                new URLEntry(
+                        "google only",
+                        "only allow url starting with http://www.google.com",
+                        "^(http://www.google).*$");
+        // GeoserverURLConfigService.getSingleton().addAndsave(googleOnly);
+        addURLEntryGeoserverURLConfigService(googleOnly);
+
+        try {
+            Requests.getInputStream(new URL("http://www.yahoo.com/some/service"));
+            fail();
+        } catch (Exception e) {
+            // assert the exception is coming from GeoserverURLConfigService
+            assertTrue(e.getMessage().contains("Evaluation Failure"));
+        }
     }
 }

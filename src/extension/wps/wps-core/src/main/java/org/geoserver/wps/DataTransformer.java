@@ -30,7 +30,6 @@ import org.geoserver.wps.transmute.GML2PolygonTransmuter;
 import org.geoserver.wps.transmute.LiteralTransmuter;
 import org.geoserver.wps.transmute.Transmuter;
 import org.geotools.data.Parameter;
-import org.geotools.data.ows.URLCheckerFactory;
 import org.geotools.process.ProcessFactory;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
@@ -53,11 +52,7 @@ public class DataTransformer {
     private Map<String, Parameter<?>> inputParameters;
     private String urlBase = null;
 
-    /**
-     * Constructor takes server base URL
-     *
-     * @param urlBase
-     */
+    /** Constructor takes server base URL */
     public DataTransformer(String urlBase) {
         this.urlBase = urlBase;
 
@@ -80,12 +75,7 @@ public class DataTransformer {
         this.transmuters.addAll(this.defaultTransmuters.values());
     }
 
-    /**
-     * Returns Map of parsed inputs ready for execution
-     *
-     * @param inputs
-     * @param parameters
-     */
+    /** Returns Map of parsed inputs ready for execution */
     @SuppressWarnings("unchecked")
     public Map<String, Object> decodeInputs(
             final List<InputType> inputs, final Map<String, Parameter<?>> parameters) {
@@ -125,12 +115,7 @@ public class DataTransformer {
         return inputMap;
     }
 
-    /**
-     * Fetches and decodes external data references
-     *
-     * @param identifier
-     * @param reference
-     */
+    /** Fetches and decodes external data references */
     private Object decodeReferenceData(
             final String identifier, final InputReferenceType reference) {
         Object data = null;
@@ -140,11 +125,8 @@ public class DataTransformer {
 
         try {
             url = new URL(reference.getHref());
-            URLCheckerFactory.evaluate(url);
         } catch (MalformedURLException e) {
             throw new WPSException("NoApplicableCode", "Malformed parameter URL.");
-        } catch (IOException io) {
-            throw new WPSException(io.getMessage(), io);
         }
 
         try {
@@ -199,12 +181,7 @@ public class DataTransformer {
         return data;
     }
 
-    /**
-     * Attempt to find ComplexTransmuter for given Java type and schema
-     *
-     * @param type
-     * @param schema
-     */
+    /** Attempt to find ComplexTransmuter for given Java type and schema */
     public ComplexTransmuter getComplexTransmuter(final Class<?> type, final String schema) {
         for (Transmuter transmuter : this.transmuters) {
             if (false == transmuter instanceof ComplexTransmuter) {
@@ -229,11 +206,7 @@ public class DataTransformer {
                 "NoApplicableCode", "Could not find ComplexTransmuter for '" + schema + "'.");
     }
 
-    /**
-     * Return default a transmuter for a given Java type
-     *
-     * @param type
-     */
+    /** Return default a transmuter for a given Java type */
     public Transmuter getDefaultTransmuter(final Class<?> type) {
         Transmuter transmuter = this.defaultTransmuters.get(type);
 
@@ -246,11 +219,7 @@ public class DataTransformer {
         return transmuter;
     }
 
-    /**
-     * Tests if all inputs and outputs of a Process are transmutable
-     *
-     * @param pf
-     */
+    /** Tests if all inputs and outputs of a Process are transmutable */
     public boolean isTransmutable(ProcessFactory pf, Name name) {
         for (Parameter<?> param : pf.getParameterInfo(name).values()) {
             try {

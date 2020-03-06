@@ -12,7 +12,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.awt.*;
+import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
 import java.awt.image.Raster;
@@ -202,7 +202,7 @@ public class GeoServerSystemTestSupport extends GeoServerBaseTestSupport<SystemT
     protected static DispatcherServlet dispatcher;
 
     /** URL Profiling service, it will be disabled by default */
-    protected GeoserverURLConfigService geoserverURLConfigServiceBean;
+    protected static GeoserverURLConfigService geoserverURLConfigServiceBean;
 
     /**
      * In IDEs during development GeoTools sources can be in the classpath of GeoServer tests, this
@@ -334,7 +334,6 @@ public class GeoServerSystemTestSupport extends GeoServerBaseTestSupport<SystemT
     protected final void tearDown(SystemTestData testData) throws Exception {
         if (testData.isTestDataAvailable()) {
             onTearDown(testData);
-
             destroyGeoServer();
 
             TestHttpClientProvider.endTest();
@@ -2561,13 +2560,17 @@ public class GeoServerSystemTestSupport extends GeoServerBaseTestSupport<SystemT
     }
 
     @Before
-    @After
     public void emptyGeoserverURLConfigServiceBean() throws Exception {
-        geoserverURLConfigServiceBean.removeAndsave(
-                geoserverURLConfigServiceBean.getGeoserverURLChecker().getRegexList());
+        try {
+            geoserverURLConfigServiceBean.removeAndsave(
+                    geoserverURLConfigServiceBean.getGeoserverURLChecker().getRegexList());
+            enableGeoserverURLConfigService(false);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
-    public void AddURLEntryGeoserverURLConfigService(URLEntry urlEntry) throws Exception {
+    public void addURLEntryGeoserverURLConfigService(URLEntry urlEntry) throws Exception {
         geoserverURLConfigServiceBean.addAndsave(urlEntry);
     }
 
@@ -2575,7 +2578,7 @@ public class GeoServerSystemTestSupport extends GeoServerBaseTestSupport<SystemT
         geoserverURLConfigServiceBean.removeAndsave(Arrays.asList(urlEntry));
     }
 
-    public void EnableGeoserverURLConfigService(boolean enabled) throws Exception {
+    public void enableGeoserverURLConfigService(boolean enabled) throws Exception {
         geoserverURLConfigServiceBean.getGeoserverURLChecker().setEnabled(enabled);
         geoserverURLConfigServiceBean.save();
     }

@@ -32,11 +32,7 @@ public class ControlPageTest extends GeoServerWicketTestSupport {
                 (DataView) tester.getComponentFromLastRenderedPage("table:listContainer:items");
         assertEquals(
                 dv.size(),
-                geoserverURLConfigServiceBean
-                        .getSingleton()
-                        .getGeoserverURLChecker()
-                        .getRegexList()
-                        .size());
+                geoserverURLConfigServiceBean.getGeoserverURLChecker().getRegexList().size());
     }
 
     @Test
@@ -59,15 +55,22 @@ public class ControlPageTest extends GeoServerWicketTestSupport {
         tester.assertNoErrorMessage();
 
         tester.assertRenderedPage(ControlPage.class);
-        URLEntry testURLEntry =
-                geoserverURLConfigServiceBean.getSingleton().getGeoserverURLChecker().get("test");
+        URLEntry testURLEntry = geoserverURLConfigServiceBean.getGeoserverURLChecker().get("test");
         assertNotNull(testURLEntry);
         // finally remove
-        geoserverURLConfigServiceBean.getSingleton().removeAndsave(Arrays.asList(testURLEntry));
+        geoserverURLConfigServiceBean.removeAndsave(Arrays.asList(testURLEntry));
     }
 
     @Test
     public void testValidationsAddNew() throws Exception {
+
+        // add an entry already to test duplication check
+
+        geoserverURLConfigServiceBean
+                .getGeoserverURLChecker()
+                .getRegexList()
+                .add(new URLEntry("files", "test123", "file"));
+
         // tests for duplicate entry and invalid regex expression
         login();
         tester.startPage(ControlPage.class);
@@ -109,8 +112,7 @@ public class ControlPageTest extends GeoServerWicketTestSupport {
         ft.setValue("regexExpression", "file");
         ft.submit("submit");
         tester.assertRenderedPage(ControlPage.class);
-        URLEntry testURLEntry =
-                geoserverURLConfigServiceBean.getSingleton().getGeoserverURLChecker().get("test");
+        URLEntry testURLEntry = geoserverURLConfigServiceBean.getGeoserverURLChecker().get("test");
         assertNotNull(testURLEntry);
 
         PageParameters params = new PageParameters();
@@ -125,12 +127,11 @@ public class ControlPageTest extends GeoServerWicketTestSupport {
         ft.submit("submit");
 
         // find the modified bean and assert changes
-        URLEntry modified =
-                geoserverURLConfigServiceBean.getSingleton().getGeoserverURLChecker().get("test");
+        URLEntry modified = geoserverURLConfigServiceBean.getGeoserverURLChecker().get("test");
         assertTrue(modified.getDescription().equalsIgnoreCase("modfied"));
 
         // clean up
-        geoserverURLConfigServiceBean.getSingleton().removeAndsave(Arrays.asList(testURLEntry));
+        geoserverURLConfigServiceBean.removeAndsave(Arrays.asList(testURLEntry));
     }
 
     @Test
@@ -148,8 +149,7 @@ public class ControlPageTest extends GeoServerWicketTestSupport {
         ft.setValue("regexExpression", "file");
         ft.submit("submit");
         tester.assertRenderedPage(ControlPage.class);
-        URLEntry testURLEntry =
-                geoserverURLConfigServiceBean.getSingleton().getGeoserverURLChecker().get("test");
+        URLEntry testURLEntry = geoserverURLConfigServiceBean.getGeoserverURLChecker().get("test");
         assertNotNull(testURLEntry);
 
         GeoServerTablePanel<URLEntry> table =
@@ -170,10 +170,6 @@ public class ControlPageTest extends GeoServerWicketTestSupport {
 
         assertEquals(
                 table.getDataProvider().size(),
-                geoserverURLConfigServiceBean
-                        .getSingleton()
-                        .getGeoserverURLChecker()
-                        .getRegexList()
-                        .size());
+                geoserverURLConfigServiceBean.getGeoserverURLChecker().getRegexList().size());
     }
 }

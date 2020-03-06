@@ -13,6 +13,7 @@ import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.link.BookmarkablePageLink;
 import org.apache.wicket.markup.html.panel.Fragment;
 import org.apache.wicket.model.IModel;
+import org.geoserver.platform.GeoServerExtensions;
 import org.geoserver.security.urlchecker.GeoserverURLChecker;
 import org.geoserver.security.urlchecker.GeoserverURLConfigService;
 import org.geoserver.security.urlchecker.URLEntry;
@@ -45,8 +46,9 @@ public class ControlPage extends GeoServerSecuredPage {
     private static final long serialVersionUID = 5963434654817570467L;
 
     public ControlPage() {
-        GeoserverURLChecker urlChecker =
-                GeoserverURLConfigService.getSingleton().getGeoserverURLChecker();
+        GeoserverURLConfigService geoserverURLConfigServiceBean =
+                GeoServerExtensions.bean(GeoserverURLConfigService.class);
+        GeoserverURLChecker urlChecker = geoserverURLConfigServiceBean.getGeoserverURLChecker();
         URLEntryProvider provider = new URLEntryProvider(urlChecker.getRegexList());
         table =
                 new GeoServerTablePanel<URLEntry>("table", provider, true) {
@@ -145,6 +147,8 @@ public class ControlPage extends GeoServerSecuredPage {
                             @Override
                             protected boolean onSubmit(
                                     final AjaxRequestTarget target, final Component contents) {
+                                GeoserverURLConfigService geoserverURLConfigServiceBean =
+                                        GeoServerExtensions.bean(GeoserverURLConfigService.class);
 
                                 if (table.getSelection().isEmpty()) {
                                     info("Nothing Selected");
@@ -152,8 +156,8 @@ public class ControlPage extends GeoServerSecuredPage {
                                 }
 
                                 try {
-                                    GeoserverURLConfigService.getSingleton()
-                                            .removeAndsave(table.getSelection());
+                                    geoserverURLConfigServiceBean.removeAndsave(
+                                            table.getSelection());
                                 } catch (Exception e) {
                                     error("An Error while deleting URL entries");
                                     LOGGER.log(
@@ -180,10 +184,10 @@ public class ControlPage extends GeoServerSecuredPage {
             public void onClick(AjaxRequestTarget target) {
                 boolean currentServiceStatus;
                 try {
+                    GeoserverURLConfigService geoserverURLConfigServiceBean =
+                            GeoServerExtensions.bean(GeoserverURLConfigService.class);
                     currentServiceStatus =
-                            GeoserverURLConfigService.getSingleton()
-                                    .getGeoserverURLChecker()
-                                    .isEnabled();
+                            geoserverURLConfigServiceBean.getGeoserverURLChecker().isEnabled();
 
                 } catch (Exception e) {
                     error(e.getMessage());
@@ -220,14 +224,16 @@ public class ControlPage extends GeoServerSecuredPage {
                             protected boolean onSubmit(
                                     final AjaxRequestTarget target, final Component contents) {
                                 // toggle state and save
+                                GeoserverURLConfigService geoserverURLConfigServiceBean =
+                                        GeoServerExtensions.bean(GeoserverURLConfigService.class);
                                 GeoserverURLChecker copy;
                                 try {
                                     copy =
-                                            GeoserverURLConfigService.getSingleton()
+                                            geoserverURLConfigServiceBean
                                                     .getGeoserverURLCheckerCopy();
                                     // toggle state
                                     copy.setEnabled(!copy.isEnabled());
-                                    GeoserverURLConfigService.getSingleton().save(copy);
+                                    geoserverURLConfigServiceBean.save(copy);
                                     // update status message
                                     statusLabel.setDefaultModelObject(
                                             getServiceStatusMessage(copy.isEnabled()));

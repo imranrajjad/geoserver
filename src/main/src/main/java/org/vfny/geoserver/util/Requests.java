@@ -123,8 +123,9 @@ public final class Requests {
      * @throws IOException
      */
     public static InputStream getInputStream(URL url) throws IOException {
-        // handle security
-        URLCheckerFactory.evaluate(url);
+        // handle security for http/https
+        if (url.getProtocol().toLowerCase().startsWith("http")) URLCheckerFactory.evaluate(url);
+
         // Open the connection
         URLConnection conn = url.openConnection();
 

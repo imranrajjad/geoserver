@@ -22,6 +22,7 @@ import org.apache.wicket.util.string.StringValue;
 import org.apache.wicket.validation.IValidatable;
 import org.apache.wicket.validation.IValidator;
 import org.apache.wicket.validation.ValidationError;
+import org.geoserver.platform.GeoServerExtensions;
 import org.geoserver.security.urlchecker.GeoserverURLConfigService;
 import org.geoserver.security.urlchecker.URLEntry;
 import org.geoserver.web.GeoServerSecuredPage;
@@ -45,10 +46,10 @@ public class URLEntryPage extends GeoServerSecuredPage {
 
         StringValue name = parameters.get(NAME);
         isNew = name.isNull();
+        GeoserverURLConfigService geoserverURLConfigServiceBean =
+                GeoServerExtensions.bean(GeoserverURLConfigService.class);
         URLEntry entry =
-                GeoserverURLConfigService.getSingleton()
-                        .getGeoserverURLChecker()
-                        .get(name.toString());
+                geoserverURLConfigServiceBean.getGeoserverURLChecker().get(name.toString());
 
         if (entry == null) entry = new URLEntry();
         initUI(new Model<URLEntry>(entry));
@@ -95,8 +96,9 @@ public class URLEntryPage extends GeoServerSecuredPage {
             @Override
             public void onSubmit() {
                 try {
-                    GeoserverURLConfigService.getSingleton()
-                            .addAndsave(form.getModel().getObject());
+                    GeoserverURLConfigService geoserverURLConfigServiceBean =
+                            GeoServerExtensions.bean(GeoserverURLConfigService.class);
+                    geoserverURLConfigServiceBean.addAndsave(form.getModel().getObject());
                     doReturn(ControlPage.class);
                 } catch (Exception e) {
                     // gui
@@ -133,13 +135,13 @@ public class URLEntryPage extends GeoServerSecuredPage {
         @Override
         public void validate(IValidatable<String> validatable) {
             final String nameValue = validatable.getValue();
-            if (GeoserverURLConfigService.getSingleton().getGeoserverURLChecker().get(nameValue)
-                    != null) {
+            GeoserverURLConfigService geoserverURLConfigServiceBean =
+                    GeoServerExtensions.bean(GeoserverURLConfigService.class);
+            if (geoserverURLConfigServiceBean.getGeoserverURLChecker().get(nameValue) != null) {
                 validatable.error(
                         new ValidationError(
                                 "Another URL Entry with name " + nameValue + " exists already"));
             }
-            ;
         }
     }
 }

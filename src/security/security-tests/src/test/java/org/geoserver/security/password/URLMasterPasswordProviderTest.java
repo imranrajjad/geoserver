@@ -7,7 +7,6 @@ package org.geoserver.security.password;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -69,7 +68,7 @@ public class URLMasterPasswordProviderTest extends GeoServerSecurityTestSupport 
 
         try {
             mpp.doGetMasterPassword();
-           // fail();
+            // fail();
         } catch (Exception e) {
 
         } finally {

@@ -61,7 +61,8 @@ public class RemoteRequestInputProvider extends AbstractInputProvider {
     protected Object getValueInternal(ProgressListener listener) throws Exception {
         InputReferenceType ref = input.getReference();
         URL destination = new URL(ref.getHref());
-        URLCheckerFactory.evaluate(destination);
+        if(destination.getProtocol().toLowerCase().startsWith("http"))
+            URLCheckerFactory.evaluate(destination);        
         HttpMethod method = null;
         GetMethod refMethod = null;
         InputStream input = null;

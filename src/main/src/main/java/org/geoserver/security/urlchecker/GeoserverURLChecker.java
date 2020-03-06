@@ -4,6 +4,10 @@
  */
 package org.geoserver.security.urlchecker;
 
+/*
+ * This is the Geoserver implementation of URLChecker interface
+ * */
+
 import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
@@ -14,7 +18,6 @@ import org.geoserver.ows.Dispatcher;
 import org.geotools.data.ows.URLChecker;
 import org.geotools.util.logging.Logging;
 
-/** @author ImranR */
 public class GeoserverURLChecker implements URLChecker, Serializable, Cloneable {
 
     static final Logger LOGGER = Logging.getLogger(GeoserverURLChecker.class.getCanonicalName());
@@ -32,6 +35,7 @@ public class GeoserverURLChecker implements URLChecker, Serializable, Cloneable 
 
     /** @return the regexList */
     public List<URLEntry> getRegexList() {
+        //  if (regexList == null) regexList = new ArrayList<URLEntry>();
         return regexList;
     }
 
@@ -84,7 +88,7 @@ public class GeoserverURLChecker implements URLChecker, Serializable, Cloneable 
     }
 
     private List<URLEntry> getEnabled() {
-        return regexList.stream().filter(e -> e.isEnable()).collect(Collectors.toList());
+        return getRegexList().stream().filter(e -> e.isEnable()).collect(Collectors.toList());
     }
 
     protected void addURLEntry(URLEntry urlEntry) {
@@ -92,19 +96,19 @@ public class GeoserverURLChecker implements URLChecker, Serializable, Cloneable 
         if (urlEntry.getName() == null) return;
         if (urlEntry.getName().isEmpty()) return;
 
-        int idx = regexList.indexOf(urlEntry);
+        int idx = getRegexList().indexOf(urlEntry);
 
-        if (idx == -1) regexList.add(urlEntry);
-        else regexList.set(idx, urlEntry);
+        if (idx == -1) getRegexList().add(urlEntry);
+        else getRegexList().set(idx, urlEntry);
     }
 
     protected boolean removeURLEntry(List<URLEntry> deleteList) {
-        return regexList.removeAll(deleteList);
+        return getRegexList().removeAll(deleteList);
     }
 
     public URLEntry get(final String urlEntryName) {
         Optional<URLEntry> entry =
-                regexList
+                getRegexList()
                         .stream()
                         .filter(urlEntry -> urlEntry.getName().equalsIgnoreCase(urlEntryName))
                         .findFirst();

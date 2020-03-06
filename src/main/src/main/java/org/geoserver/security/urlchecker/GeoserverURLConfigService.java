@@ -9,19 +9,23 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.geoserver.config.util.XStreamPersister;
 import org.geoserver.config.util.XStreamPersisterFactory;
-import org.geoserver.platform.GeoServerExtensions;
 import org.geoserver.platform.GeoServerResourceLoader;
 import org.geoserver.platform.resource.Resource;
 import org.geotools.data.ows.URLCheckerFactory;
+import org.geotools.util.logging.Logging;
 
 /**
- * @author ImranR
- *     <p>This class manages persistence of GeoserverURLChecker in Data Directory and registration
- *     in URLCheckerFactory SPI utility class
+ * This class manages persistence of GeoserverURLChecker in Data Directory and registration in
+ * URLCheckerFactory SPI utility class
  */
 public class GeoserverURLConfigService {
+
+    static final Logger LOGGER =
+            Logging.getLogger(GeoserverURLConfigService.class.getCanonicalName());
 
     private File workspaceDirectory;
 
@@ -40,9 +44,6 @@ public class GeoserverURLConfigService {
         Resource resource = dataDir.get("security//");
         workspaceDirectory = resource.dir();
         xmlFile = dataDir.find(workspaceDirectory, "urls.xml");
-
-        System.out.println(xmlFile);
-
         if (xmlFile == null) {
             xmlFile = dataDir.createFile(workspaceDirectory, "urls.xml");
             xmlFile.createNewFile();
@@ -54,6 +55,9 @@ public class GeoserverURLConfigService {
 
             geoserverURLChecker = read(xmlFile);
         }
+        if (LOGGER.isLoggable(Level.FINE))
+            LOGGER.fine(
+                    "GeoserverURLConfigService persited in file : " + xmlFile.getAbsolutePath());
         // register
         registerSPI(geoserverURLChecker);
     }
@@ -124,7 +128,10 @@ public class GeoserverURLConfigService {
 
     private GeoserverURLChecker read(File inFile) throws Exception {
         try (FileInputStream fis = new FileInputStream(inFile)) {
-            return xp.load(fis, GeoserverURLChecker.class);
+            GeoserverURLChecker unmarshalled = xp.load(fis, GeoserverURLChecker.class);
+            if (unmarshalled.getRegexList() == null)
+                unmarshalled.setRegexList(new ArrayList<URLEntry>());
+            return unmarshalled;
         }
     }
 
@@ -152,10 +159,11 @@ public class GeoserverURLConfigService {
         return (GeoserverURLChecker) geoserverURLChecker.clone();
     }
 
-    public static GeoserverURLConfigService getSingleton() {
-        if (singleton == null)
-            singleton = GeoServerExtensions.bean(GeoserverURLConfigService.class);
+    //    public static GeoserverURLConfigService getSingleton() {
+    //        if (singleton == null)
+    //            singleton = GeoServerExtensions.bean(GeoserverURLConfigService.class);
+    //
+    //        return singleton;
+    //    }
 
-        return singleton;
-    }
 }
