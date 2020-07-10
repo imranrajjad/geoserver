@@ -21,7 +21,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -40,8 +39,19 @@ import org.apache.wicket.ajax.AjaxEventBehavior;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.extensions.markup.html.tabs.TabbedPanel;
 import org.apache.wicket.markup.html.list.ListView;
+import org.apache.wicket.markup.repeater.data.DataView;
 import org.apache.wicket.util.tester.FormTester;
-import org.geoserver.catalog.*;
+import org.geoserver.catalog.Catalog;
+import org.geoserver.catalog.CatalogBuilder;
+import org.geoserver.catalog.CatalogFactory;
+import org.geoserver.catalog.CoverageInfo;
+import org.geoserver.catalog.DataStoreInfo;
+import org.geoserver.catalog.FeatureTypeInfo;
+import org.geoserver.catalog.LayerInfo;
+import org.geoserver.catalog.ResourceInfo;
+import org.geoserver.catalog.TestHttpClientProvider;
+import org.geoserver.catalog.WMTSLayerInfo;
+import org.geoserver.catalog.WMTSStoreInfo;
 import org.geoserver.catalog.impl.DataStoreInfoImpl;
 import org.geoserver.catalog.impl.FeatureTypeInfoImpl;
 import org.geoserver.catalog.impl.WMTSStoreInfoImpl;
@@ -69,6 +79,7 @@ import org.geotools.data.wfs.WFSDataStoreFactory;
 import org.geotools.feature.NameImpl;
 import org.geotools.gce.imagemosaic.ImageMosaicFormat;
 import org.geotools.geometry.jts.ReferencedEnvelope;
+import org.geotools.referencing.CRS;
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 import org.springframework.security.core.Authentication;
@@ -520,5 +531,92 @@ public class ResourceConfigurationPageTest extends GeoServerWicketTestSupport {
                                 "publishedinfo:tabs:panel:theList:0:content:referencingForm:nativeSRS:srs")
                         .getDefaultModelObjectAsString();
         assertFalse(newNativeSRS.equalsIgnoreCase(actualNativeSRS));
+    }
+
+    @Test
+    public void testWMTSOtherCRSUrnFormat() throws IOException {
+        // SRSProvider constructor removes EPSG: from identifier
+        // to display only the code in otherSRS list. This test
+        // checks that CRS identified through urn format are properly
+        // displayed as well.
+        String baseURL = TestHttpClientProvider.MOCKSERVER;
+        MockHttpClient client = new MockHttpClient();
+        Catalog catalog = getCatalog();
+        URL descURL = new URL(baseURL + "/wmts?REQUEST=GetCapabilities&VERSION=1.0.0&SERVICE=WMTS");
+        client.expectGet(
+                descURL,
+                new MockHttpResponse(getClass().getResource("/wmts_getCaps.xml"), "text/xml"));
+
+        TestHttpClientProvider.bind(client, descURL);
+        WMTSStoreInfo storeInfo = new WMTSStoreInfoImpl(getCatalog());
+        storeInfo.setName("Another Mock WMTS Store");
+        storeInfo.setCapabilitiesURL(descURL.toString());
+        storeInfo.setConnectTimeout(60);
+        storeInfo.setMaxConnections(10);
+        storeInfo.setDateCreated(new Date());
+        storeInfo.setDateModified(new Date());
+        catalog.add(storeInfo);
+        CatalogBuilder builder = new CatalogBuilder(catalog);
+        builder.setStore(storeInfo);
+        WMTSLayerInfo wmtsLayerInfo = builder.buildWMTSLayer("bmapgrau");
+        LayerInfo layerInfo = builder.buildLayer(wmtsLayerInfo);
+
+        // page should show additional SRS in WMTS cap document
+        login();
+        tester.startPage(new ResourceConfigurationPage(layerInfo, true));
+        // click the FIND button next to open SRS selection popup
+        tester.clickLink(
+                "publishedinfo:tabs:panel:theList:0:content:referencingForm:nativeSRS:find");
+
+        // verify Layer`s resource is updated with metadata
+        assertNotNull(layerInfo.getResource().getMetadata().get(FeatureTypeInfo.OTHER_SRS));
+
+        DataView epsgContainer =
+                (DataView)
+                        tester.getComponentFromLastRenderedPage(
+                                "publishedinfo:tabs:panel:theList:0:content:referencingForm:nativeSRS:popup:content:table:listContainer:items");
+
+        // we got two epsg in the otherSrs container
+        assertEquals(3, epsgContainer.size());
+
+        Component epsgComponent1 =
+                tester.getComponentFromLastRenderedPage(
+                        "publishedinfo:tabs:panel:theList:0:content:referencingForm:nativeSRS:popup:content:table:listContainer:items:1:itemProperties:0:component:link:label");
+        Component epsgComponent2 =
+                tester.getComponentFromLastRenderedPage(
+                        "publishedinfo:tabs:panel:theList:0:content:referencingForm:nativeSRS:popup:content:table:listContainer:items:2:itemProperties:0:component:link:label");
+
+        Component epsgComponent3 =
+                tester.getComponentFromLastRenderedPage(
+                        "publishedinfo:tabs:panel:theList:0:content:referencingForm:nativeSRS:popup:content:table:listContainer:items:3:itemProperties:0:component:link:label");
+
+        // checks that they have been properly displayed with not urn format being cut
+
+        assertEquals("3857", epsgComponent1.getDefaultModel().getObject());
+        assertEquals("urn:ogc:def:crs:EPSG::900913", epsgComponent2.getDefaultModel().getObject());
+        assertEquals("urn:ogc:def:crs:EPSG::3857", epsgComponent3.getDefaultModel().getObject());
+    }
+
+    @Test
+    public void testUrnOgcSRIDResource() throws Exception {
+        String urnOgc = "urn:ogc:def:crs:EPSG::4326";
+        Catalog catalog = getGeoServerApplication().getCatalog();
+        LayerInfo layer = catalog.getLayerByName(getLayerId(LINES));
+        assertNotNull(layer);
+        ResourceInfo ft = layer.getResource();
+        ft.setSRS(urnOgc);
+        ft.setNativeCRS(CRS.decode(urnOgc));
+        catalog.save(ft);
+        login();
+        // render page for a layer with resource with SRID defind in URN OGC format
+        tester.startPage(new ResourceConfigurationPage(layer, false));
+        // assert no error occurred on page and page is available for configuration
+        tester.assertNoErrorMessage();
+        // assert that native srs is correctly set
+        String nativeSRSTextFieldValue =
+                tester.getComponentFromLastRenderedPage(
+                                "publishedinfo:tabs:panel:theList:0:content:referencingForm:nativeSRS:srs")
+                        .getDefaultModelObjectAsString();
+        assertEquals("Asserting EPSG code", "EPSG:4326", nativeSRSTextFieldValue);
     }
 }
