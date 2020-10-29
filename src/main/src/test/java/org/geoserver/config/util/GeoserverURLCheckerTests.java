@@ -15,7 +15,7 @@ import org.geoserver.ows.Request;
 import org.geoserver.security.urlchecker.GeoserverURLChecker;
 import org.geoserver.security.urlchecker.URLEntry;
 import org.geoserver.test.GeoServerSystemTestSupport;
-import org.geotools.data.ows.URLCheckerFactory;
+import org.geotools.data.ows.URLCheckers;
 import org.junit.Before;
 import org.junit.Test;
 import org.vfny.geoserver.util.Requests;
@@ -27,7 +27,7 @@ public class GeoserverURLCheckerTests extends GeoServerSystemTestSupport {
         // assert bean exists
         //  assertNotNull(GeoserverURLConfigService.getSingleton());
         // verify SPI Factory has the bean registered
-        assertFalse(URLCheckerFactory.getUrlCheckerList().isEmpty());
+        assertFalse(URLCheckers.getEnabledURLCheckerList().isEmpty());
     }
 
     @Test
@@ -39,7 +39,7 @@ public class GeoserverURLCheckerTests extends GeoServerSystemTestSupport {
         checker.setEnabled(true);
         checker = super.geoserverURLConfigServiceBean.save();
         assertTrue(checker.isEnabled());
-        assertTrue(URLCheckerFactory.getUrlCheckerList().size() == 1);
+        assertTrue(URLCheckers.getEnabledURLCheckerList().size() == 1);
     }
 
     @Test
@@ -60,9 +60,9 @@ public class GeoserverURLCheckerTests extends GeoServerSystemTestSupport {
         checker.get("google only").setEnable(true);
 
         // evaluate though Factory methods
-        assertTrue(URLCheckerFactory.evaluate("http://www.google.com/some/service"));
+        assertTrue(URLCheckers.evaluate("http://www.google.com/some/service"));
         try {
-            assertFalse(URLCheckerFactory.evaluate("http://www.yahoo.com/some/service"));
+            assertFalse(URLCheckers.evaluate("http://www.yahoo.com/some/service"));
             fail();
         } catch (Exception e) {
             // assert the exception is coming from GeoserverURLConfigService

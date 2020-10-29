@@ -15,12 +15,12 @@ import org.geoserver.config.util.XStreamPersister;
 import org.geoserver.config.util.XStreamPersisterFactory;
 import org.geoserver.platform.GeoServerResourceLoader;
 import org.geoserver.platform.resource.Resource;
-import org.geotools.data.ows.URLCheckerFactory;
+import org.geotools.data.ows.URLCheckers;
 import org.geotools.util.logging.Logging;
 
 /**
  * This class manages persistence of GeoserverURLChecker in Data Directory and registration in
- * URLCheckerFactory SPI utility class
+ * URLCheckers SPI utility class
  */
 public class GeoserverURLConfigService {
 
@@ -142,8 +142,8 @@ public class GeoserverURLConfigService {
 
     private synchronized void registerSPI(GeoserverURLChecker geoserverURLChecker) {
         // remove existing
-        URLCheckerFactory.removeURLChecker(geoserverURLChecker);
-        URLCheckerFactory.addURLChecker(geoserverURLChecker);
+        URLCheckers.removeURLChecker(geoserverURLChecker);
+        URLCheckers.addURLChecker(geoserverURLChecker);
     }
 
     /** @return the geoserverURLChecker */
@@ -158,12 +158,4 @@ public class GeoserverURLConfigService {
     public GeoserverURLChecker getGeoserverURLCheckerCopy() throws Exception {
         return (GeoserverURLChecker) geoserverURLChecker.clone();
     }
-
-    //    public static GeoserverURLConfigService getSingleton() {
-    //        if (singleton == null)
-    //            singleton = GeoServerExtensions.bean(GeoserverURLConfigService.class);
-    //
-    //        return singleton;
-    //    }
-
 }

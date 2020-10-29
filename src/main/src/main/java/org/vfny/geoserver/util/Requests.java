@@ -20,7 +20,7 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 import javax.servlet.http.HttpServletRequest;
-import org.geotools.data.ows.URLCheckerFactory;
+import org.geotools.data.ows.URLCheckers;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -124,7 +124,7 @@ public final class Requests {
      */
     public static InputStream getInputStream(URL url) throws IOException {
         // handle security for http/https
-        if (url.getProtocol().toLowerCase().startsWith("http")) URLCheckerFactory.evaluate(url);
+        if (url.getProtocol().toLowerCase().startsWith("http")) URLCheckers.evaluate(url);
 
         // Open the connection
         URLConnection conn = url.openConnection();
